@@ -8,13 +8,13 @@ import 'package:flutter/services.dart';
 import 'avatar_item.dart';
 
 mixin AvatarMixin<T extends StatefulWidget> on State<T> {
-
   AvatarItem avatarItem;
 
   CompositeSubscription _avatarBag = CompositeSubscription();
 
   BehaviorSubject<Artboard> mainArtBoard = BehaviorSubject();
 
+  /// 加载动画完成
   BehaviorSubject<Rive> mainAnimationWidget = BehaviorSubject();
 
   Future<ByteData> _loadRivFile(String path) => rootBundle.load(path);
@@ -41,7 +41,10 @@ mixin AvatarMixin<T extends StatefulWidget> on State<T> {
             if (avatarItem.make != null) {
               return avatarItem.make(event);
             }
-            return Rive(artboard: event);
+            return Rive(
+              artboard: event,
+              useArtboardSize: true,
+            );
           })
           .listen((event) => mainAnimationWidget.add(event))
           .addTo(_avatarBag);
@@ -49,12 +52,27 @@ mixin AvatarMixin<T extends StatefulWidget> on State<T> {
       /// 读取文件
       _loadFile(avatarItem.rivFilePath)
           .take(1)
-          .map((event) => event.mainArtboard)
-          .listen((event) => mainArtBoard.add(event))
+          .listen((event) => riveFileDidLoaded(event))
           .addTo(_avatarBag);
     }
 
     super.initState();
+  }
+
+  /// rive文件被读取完毕
+  void riveFileDidLoaded(RiveFile rive) {
+    artBoardDidLoaded(rive.mainArtboard, rive.artboards);
+  }
+
+  /// 画板被读取
+  void artBoardDidLoaded(Artboard mainArtboard, List<Artboard> artboards) {
+    didAddMainBoardToStage(mainArtboard);
+  }
+
+  /// 将默认画板加入舞台
+  Artboard didAddMainBoardToStage(Artboard mainArtboard) {
+    mainArtBoard.add(mainArtboard);
+    return mainArtboard;
   }
 
   @override
